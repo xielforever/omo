@@ -39,27 +39,17 @@ opencode
 
 ## 配置 AI 模型
 
-首先配置 API Key：
-
-```bash
-# 方式1: 使用 .env 文件
-cp .env.example .env
-# 编辑 .env，填入 ANTHROPIC_API_KEY / OPENAI_API_KEY 等
-
-# 方式2: 使用 OpenCode auth
-opencode auth login
-```
-
-然后运行交互式安装器，选择 Provider 并分配 Agent 模型：
+运行交互式安装器，完成 Provider、API Key、模型和 Agent 的全套配置：
 
 ```bash
 bun run omo install
 ```
 
-安装器会引导你完成三个阶段：
-1. 选择拥有的 AI 服务商（16 个可选，多选）
-2. 选择每个服务商的可用模型（多选）
-3. 为 11 个 Agent 分配主模型和 fallback
+安装器会引导你完成：
+1. 选择 AI 服务商（16 个可选，多选）
+2. 配置 API Key（通过 .env 或 opencode auth）
+3. 选择每个服务商的可用模型（多选）
+4. 为 11 个 Agent 分配主模型和 fallback
 
 配置写入 `~/.config/opencode/oh-my-openagent.jsonc`。
 
