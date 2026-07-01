@@ -66,7 +66,7 @@ opencode
 
 在任意 LLM 工具中粘贴以下指令：
 
-> 按照 https://raw.githubusercontent.com/xielforever/omo/refs/heads/custom/README.md 的源码安装指引，克隆、安装依赖、配置 OpenCode 插件并启动。
+> 按照 https://raw.githubusercontent.com/xielforever/omo/refs/heads/main/README.md 的源码安装指引，克隆、安装依赖、配置 OpenCode 插件并启动。
 
 ## 上游
 
