@@ -12,18 +12,29 @@ cd omo
 bun install --ignore-scripts
 ```
 
+```bash
+# 配置 API Key（二选一）
+# 方式1: 使用 .env 文件
+cp .env.example .env
+# 编辑 .env，填入 ANTHROPIC_API_KEY / OPENAI_API_KEY 等
+
+# 方式2: 使用 OpenCode auth login
+opencode auth login
+```
+
 然后配置 OpenCode 加载本地插件：
 
 ```bash
+Omo_DIR=$(pwd)
 mkdir -p ~/.config/opencode
-cat > ~/.config/opencode/opencode.json << 'EOF'
+cat > ~/.config/opencode/opencode.json << EOF
 {
-  "plugin": ["file:///data/omo/packages/omo-opencode/src/index.ts"]
+  "plugin": ["file://${Omo_DIR}/packages/omo-opencode/src/index.ts"]
 }
 EOF
 ```
 
-> 注意：`file://` 路径需替换为你的实际 clone 路径。OpenCode 运行在 Bun 上，原生支持 TypeScript 源码直载，无需构建。
+> 注意：OpenCode 运行在 Bun 上，原生支持 TypeScript 源码直载，无需构建。
 
 ```bash
 # 创建插件配置
@@ -46,9 +57,16 @@ opencode
 ## 定制
 
 插件配置位于 `~/.config/opencode/oh-my-openagent.jsonc`，支持：
-- 模型选择：`"agents": { "sisyphus": { "model": "kimi-k2.6" } }`
+- Agent 模型分配：安装时 TUI 交互选择，或手动编辑 `"agents"` 字段
+- Provider 配置：在 `~/.config/opencode/opencode.json` 的 `provider` 段配置 API 端点
 - 中文名称：`"displayName": "大禹"`（可选，见 `docs/guide/agent-model-matching.md`）
 - 功能开关：`"disabled_hooks": [...]`
+
+## 给 LLM 使用
+
+在任意 LLM 工具中粘贴以下指令：
+
+> 按照 https://raw.githubusercontent.com/xielforever/omo/refs/heads/custom/README.md 的源码安装指引，克隆、安装依赖、配置 OpenCode 插件并启动。
 
 ## 上游
 
