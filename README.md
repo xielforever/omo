@@ -42,7 +42,7 @@ opencode
 运行交互式安装器，完成 Provider、API Key、模型和 Agent 的全套配置：
 
 ```bash
-bun run omo install
+bun packages/omo-opencode/src/cli/index.ts install
 ```
 
 安装器会引导你完成：
