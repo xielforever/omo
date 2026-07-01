@@ -173,17 +173,17 @@ export async function promptNextAction(
 
 // ── agent assignment ────────────────────────────────────────────────
 
-/** 单个 agent 的主模型 + fallback 选择 */
+let fallbackHintShown = false
+
+/** 单个 agent 的主模型选择（fallback 通过编辑 config 手动添加） */
 export async function promptAgentAssignment(
   agentName: string,
   displayName: string,
   modelChoices: Array<{ value: string; label: string; hint: string }>,
   recommended?: string,
 ): Promise<{ primary: string; fallbacks: string[] } | null> {
-  // 主模型选择
-  const msg = `🧠 ${displayName} (${agentName}) — 选择主模型:`
   const primary = await p.select<string>({
-    message: msg,
+    message: `🧠 ${displayName} (${agentName}) — 选择主模型:`,
     options: [
       ...modelChoices.map((c) => ({ ...c })),
       { value: "__skip__", label: "跳过此 Agent", hint: "不在配置中启用" },
@@ -197,22 +197,12 @@ export async function promptAgentAssignment(
   }
   if (primary === "__skip__") return { primary: "", fallbacks: [] }
 
-  // Fallback 多选（排除已选的 primary）
-  const fbChoices = modelChoices.filter((c) => c.value !== primary)
-  if (fbChoices.length === 0) return { primary, fallbacks: [] }
-
-  const fallbacks = await p.multiselect<string>({
-    message: `  Fallback 模型 (可选，空格勾选):`,
-    options: fbChoices,
-    required: false,
-  })
-
-  if (p.isCancel(fallbacks)) {
-    p.cancel("取消安装")
-    return null
+  if (!fallbackHintShown) {
+    fallbackHintShown = true
+    p.log.info("需要 Fallback 模型？稍后编辑 ~/.config/opencode/oh-my-openagent.jsonc")
   }
 
-  return { primary, fallbacks }
+  return { primary, fallbacks: [] }
 }
 
 // ── main orchestrator ───────────────────────────────────────────────
