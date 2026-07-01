@@ -4,19 +4,18 @@ import { basename, dirname, extname, join } from "node:path"
 import { parseJsonc } from "../../shared"
 import { migrateLegacyConfigFile } from "../../shared/migrate-legacy-config-file"
 import { CONFIG_BASENAME, LEGACY_CONFIG_BASENAME } from "../../shared/plugin-identity"
-import type { ConfigMergeResult, InstallConfig } from "../types"
+import type { ConfigMergeResult } from "../types"
 import { backupConfigFile } from "./backup-config"
 import { getConfigDir, getOmoConfigPath } from "./config-context"
 import { deepMergeRecord } from "./deep-merge-record"
 import { ensureConfigDirectoryExists } from "./ensure-config-directory-exists"
 import { formatErrorWithSuggestion } from "./format-error-with-suggestion"
-import { generateOmoConfig } from "./generate-omo-config"
 
 function isEmptyOrWhitespace(content: string): boolean {
   return content.trim().length === 0
 }
 
-export function writeOmoConfig(installConfig: InstallConfig): ConfigMergeResult {
+export function writeOmoConfig(config: Record<string, unknown>): ConfigMergeResult {
   try {
     ensureConfigDirectoryExists()
   } catch (err) {
@@ -37,7 +36,7 @@ export function writeOmoConfig(installConfig: InstallConfig): ConfigMergeResult 
     : detectedConfigPath
 
   try {
-    const newConfig = generateOmoConfig(installConfig)
+    const newConfig = config
 
     if (existsSync(omoConfigPath)) {
       const backupResult = backupConfigFile(omoConfigPath)

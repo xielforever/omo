@@ -1,3 +1,4 @@
+/** Note: buildOmoConfigFromAssignments() in agent-assignment.ts is the new primary config generator. generateModelConfig() retained for backward compatibility. */
 import {
   CLI_AGENT_MODEL_REQUIREMENTS,
   CLI_CATEGORY_MODEL_REQUIREMENTS,
@@ -22,7 +23,7 @@ import { transformModelForProvider } from "./provider-model-id-transform"
 export type { GeneratedOmoConfig } from "./model-fallback-types"
 
 export const ULTIMATE_FALLBACK = "opencode/gpt-5-nano"
-const SCHEMA_URL = "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-opencode.schema.json"
+const SCHEMA_URL = "https://raw.githubusercontent.com/xielforever/omo/dev/assets/oh-my-opencode.schema.json"
 
 type CompatibleFallbackSettings = {
   variant?: string

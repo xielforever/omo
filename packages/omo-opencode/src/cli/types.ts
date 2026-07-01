@@ -1,22 +1,29 @@
-export type ClaudeSubscription = "no" | "yes" | "max20"
-export type BooleanArg = "no" | "yes"
 export type InstallPlatform = "opencode" | "codex" | "both"
+
+/** 用户对单个 provider 的模型选择 */
+export interface ProviderModelSelection {
+  key: string       // provider ID, e.g. "opencode-go"
+  models: string[]  // selected model IDs, e.g. ["kimi-k2.6", "glm-5.1"]
+}
+
+/** 单个 agent 的模型分配 */
+export interface AgentModelAssignment {
+  agentName: string  // "sisyphus"
+  primary: {
+    provider: string // "opencode-go"
+    model: string    // "kimi-k2.6"
+  }
+  fallbacks: Array<{
+    provider: string
+    model: string
+  }>
+}
 
 export interface InstallArgs {
   tui: boolean
   platform?: InstallPlatform
-  claude?: ClaudeSubscription
-  openai?: BooleanArg
-  gemini?: BooleanArg
-  copilot?: BooleanArg
-  opencodeZen?: BooleanArg
-  zaiCodingPlan?: BooleanArg
-  kimiForCoding?: BooleanArg
-  opencodeGo?: BooleanArg
-  bailianCodingPlan?: BooleanArg
-  minimaxCnCodingPlan?: BooleanArg
-  minimaxCodingPlan?: BooleanArg
-  vercelAiGateway?: BooleanArg
+  providers?: string        // format: "opencode-go=kimi-k2.6,glm-5.1 zai-coding-plan=glm-5.1"
+  agentAssignments?: string // format: "sisyphus:opencode-go/kimi-k2.6,fb:zai/glm-5.1"
   codexAutonomous?: boolean
   skipAuth?: boolean
 }
@@ -24,20 +31,9 @@ export interface InstallArgs {
 export interface InstallConfig {
   platform: InstallPlatform
   hasOpenCode: boolean
-  hasClaude: boolean
-  isMax20: boolean
-  hasOpenAI: boolean
-  hasGemini: boolean
-  hasCopilot: boolean
   hasCodex: boolean
-  hasOpencodeZen: boolean
-  hasZaiCodingPlan: boolean
-  hasKimiForCoding: boolean
-  hasOpencodeGo: boolean
-  hasBailianCodingPlan: boolean
-  hasMinimaxCnCodingPlan: boolean
-  hasMinimaxCodingPlan: boolean
-  hasVercelAiGateway: boolean
+  providers: ProviderModelSelection[]       // 用户选择的 provider 及模型
+  agentAssignments: AgentModelAssignment[]  // 每个 agent 的主模型 + fallback
   codexAutonomous: boolean
 }
 
@@ -45,23 +41,4 @@ export interface ConfigMergeResult {
   success: boolean
   configPath: string
   error?: string
-}
-
-export interface DetectedConfig {
-  isInstalled: boolean
-  installedVersion: string | null
-  hasClaude: boolean
-  isMax20: boolean
-  hasOpenAI: boolean
-  hasGemini: boolean
-  hasCopilot: boolean
-  hasCodex: boolean
-  hasOpencodeZen: boolean
-  hasZaiCodingPlan: boolean
-  hasKimiForCoding: boolean
-  hasOpencodeGo: boolean
-  hasBailianCodingPlan: boolean
-  hasMinimaxCnCodingPlan: boolean
-  hasMinimaxCodingPlan: boolean
-  hasVercelAiGateway: boolean
 }

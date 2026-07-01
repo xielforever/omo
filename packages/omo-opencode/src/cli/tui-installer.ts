@@ -4,193 +4,103 @@ import { PLUGIN_NAME } from "../shared"
 import type { InstallArgs } from "./types"
 import {
   addPluginToOpenCodeConfig,
-  detectCurrentConfig,
-  getOpenCodeVersion,
   isOpenCodeInstalled,
+  getOpenCodeVersion,
   writeOmoConfig,
 } from "./config-manager"
-import { detectedToInitialValues, formatConfigSummary, SYMBOLS } from "./install-validators"
+import { formatConfigSummary } from "./install-validators"
 import { getUnsupportedOpenCodeVersionMessage } from "./minimum-opencode-version"
-import { promptInstallConfig, promptInstallPlatform } from "./tui-install-prompts"
-import { detectCodexInstallation, formatCodexInstallationWarning, runCodexInstaller } from "./install-codex"
+import { promptInstallConfig } from "./tui-install-prompts"
+import { runCodexInstaller } from "./install-codex"
 import { starGitHubRepositories } from "./star-request"
-import { getNoModelProvidersWarning, hasAnyConfiguredProvider } from "./provider-availability"
+import { buildOmoConfigFromAssignments } from "./agent-assignment"
 import { ensureTuiPluginEntry } from "./config-manager/add-tui-plugin-to-tui-config"
 import * as astGrepInstall from "./install-ast-grep-sg"
 
 export async function runTuiInstaller(args: InstallArgs, version: string): Promise<number> {
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    console.error("Error: Interactive installer requires a TTY. Use --non-interactive or set environment variables directly.")
+    console.error("Error: Interactive installer requires a TTY.")
     return 1
   }
 
-  const selectedPlatform = await promptInstallPlatform(args.platform ?? "opencode")
-  if (!selectedPlatform) return 1
+  p.intro(color.bgMagenta(color.white(" oMoMoMoMo... ")))
 
-  const hasOpenCode = selectedPlatform === "opencode" || selectedPlatform === "both"
-  const detected = hasOpenCode
-    ? detectCurrentConfig()
-    : {
-        isInstalled: false,
-        installedVersion: null,
-        hasClaude: false,
-        isMax20: false,
-        hasOpenAI: false,
-        hasGemini: false,
-        hasCopilot: false,
-        hasCodex: false,
-        hasOpencodeZen: false,
-        hasZaiCodingPlan: false,
-        hasKimiForCoding: false,
-        hasOpencodeGo: false,
-        hasBailianCodingPlan: false,
-        hasMinimaxCnCodingPlan: false,
-        hasMinimaxCodingPlan: false,
-        hasVercelAiGateway: false,
-      }
-  const isUpdate = hasOpenCode && detected.isInstalled
-
-  p.intro(color.bgMagenta(color.white(isUpdate ? " oMoMoMoMo... Update " : " oMoMoMoMo... ")))
-
-  if (isUpdate) {
-    const initial = detectedToInitialValues(detected)
-    p.log.info(`Existing configuration detected: Claude=${initial.claude}, Gemini=${initial.gemini}`)
-  }
-
+  // OpenCode preflight
   const spinner = p.spinner()
-  if (hasOpenCode) {
-    spinner.start("Checking OpenCode installation")
-
-    const installed = await isOpenCodeInstalled()
-    const openCodeVersion = await getOpenCodeVersion()
-    if (!installed) {
-      spinner.stop(`OpenCode binary not found ${color.yellow("[!]")}`)
-      p.log.warn("OpenCode binary not found. Plugin will be configured, but you'll need to install OpenCode to use it.")
-      p.note("Visit https://opencode.ai/docs for installation instructions", "Installation Guide")
-    } else {
-      spinner.stop(`OpenCode ${openCodeVersion ?? "installed"} ${color.green("[OK]")}`)
-
-      const unsupportedVersionMessage = getUnsupportedOpenCodeVersionMessage(openCodeVersion)
-      if (unsupportedVersionMessage) {
-        p.log.warn(unsupportedVersionMessage)
-        p.outro(color.red("Installation blocked."))
-        return 1
-      }
-    }
+  spinner.start("检查 OpenCode 安装")
+  const installed = await isOpenCodeInstalled()
+  const openCodeVersion = await getOpenCodeVersion()
+  if (!installed) {
+    spinner.stop(`OpenCode 未找到 ${color.yellow("[!]")}`)
+    p.log.warn("未找到 OpenCode，请先安装。")
+  } else {
+    spinner.stop(`OpenCode ${openCodeVersion ?? "已安装"} ${color.green("[OK]")}`)
+    const unsupportedMsg = getUnsupportedOpenCodeVersionMessage(openCodeVersion)
+    if (unsupportedMsg) { p.log.warn(unsupportedMsg); p.outro(color.red("安装被阻止")); return 1 }
   }
 
-  const config = await promptInstallConfig(detected, selectedPlatform, args.codexAutonomous)
+  // New 3-stage interactive config
+  const config = await promptInstallConfig()
   if (!config) return 1
 
   if (config.hasOpenCode) {
-    spinner.start(`Adding ${PLUGIN_NAME} to OpenCode config`)
+    // Register plugin
+    spinner.start(`注册 ${PLUGIN_NAME} 到 OpenCode`)
     const pluginResult = await addPluginToOpenCodeConfig(version)
     if (!pluginResult.success) {
-      spinner.stop(`Failed to add plugin: ${pluginResult.error}`)
-      p.outro(color.red("Installation failed."))
+      spinner.stop(`注册失败: ${pluginResult.error}`)
+      p.outro(color.red("安装失败"))
       return 1
     }
-    spinner.stop(`Plugin added to ${color.cyan(pluginResult.configPath)}`)
-    try {
-      ensureTuiPluginEntry()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      p.log.warn(`Could not update OpenCode TUI config: ${message}`)
-    }
+    spinner.stop(`插件已注册到 ${color.cyan(pluginResult.configPath)}`)
 
-    spinner.start(`Writing ${PLUGIN_NAME} configuration`)
-    const omoResult = writeOmoConfig(config)
+    try { ensureTuiPluginEntry() }
+    catch (e) { p.log.warn(`TUI 配置更新失败: ${e instanceof Error ? e.message : String(e)}`) }
+
+    // Write config from assignments
+    spinner.start("写入模型配置")
+    const omoConfig = buildOmoConfigFromAssignments(config)
+    const omoResult = writeOmoConfig(omoConfig)
     if (!omoResult.success) {
-      spinner.stop(`Failed to write config: ${omoResult.error}`)
-      p.outro(color.red("Installation failed."))
+      spinner.stop(`写入失败: ${omoResult.error}`)
+      p.outro(color.red("安装失败"))
       return 1
     }
-    spinner.stop(`Config written to ${color.cyan(omoResult.configPath)}`)
+    spinner.stop(`配置已写入 ${color.cyan(omoResult.configPath)}`)
     await astGrepInstall.installAstGrepForOpenCode({ log: p.log.warn })
   }
 
-  if (config.hasOpenCode && !config.hasClaude) {
-    p.log.info(
-      `${color.bold("Note:")} Sisyphus agent performs best with Claude Opus 4.5+.\n` +
-        `Other models work but may have reduced orchestration quality.`,
-    )
-  }
-
-  if (config.hasOpenCode && !hasAnyConfiguredProvider(config)) {
-    p.log.warn(getNoModelProvidersWarning())
-  }
-
-  p.note(formatConfigSummary(config), isUpdate ? "Updated Configuration" : "Installation Complete")
-
+  // Codex (if selected)
   if (config.hasCodex) {
-    const codexInstallation = await detectCodexInstallation()
-    if (!codexInstallation.found) {
-      p.log.warn(formatCodexInstallationWarning(codexInstallation))
-    }
-
-    spinner.start("Installing Codex harness adapter")
+    spinner.start("安装 Codex 适配器")
     try {
       const codexResult = await runCodexInstaller({ autonomousPermissions: config.codexAutonomous })
-      spinner.stop(`Codex plugin installed to ${color.cyan(codexResult.configPath)}`)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      spinner.stop(`Codex install failed ${color.yellow("[!]")}`)
-      if (!config.hasOpenCode) {
-        p.log.error(`Codex install failed: ${message}`)
-        p.outro(color.red("Installation failed."))
-        return 1
-      }
-      p.log.warn(`Codex install failed (OpenCode install remains successful): ${message}`)
+      spinner.stop(`Codex 已安装到 ${color.cyan(codexResult.configPath)}`)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      spinner.stop(`Codex 安装失败 ${color.yellow("[!]")}`)
+      if (!config.hasOpenCode) { p.log.error(`Codex: ${msg}`); p.outro(color.red("安装失败")); return 1 }
+      p.log.warn(`Codex 安装失败: ${msg}`)
     }
   }
 
-  p.log.success(color.bold(isUpdate ? "Configuration updated!" : "Installation complete!"))
-  if (config.hasOpenCode) {
-    p.log.message(`Run ${color.cyan("opencode")} to start!`)
-  }
-  p.log.info("Anonymous telemetry is enabled by default. Disable it with OMO_SEND_ANONYMOUS_TELEMETRY=0 or OMO_DISABLE_POSTHOG=1.")
-  p.log.info("Docs: docs/legal/privacy-policy.md and docs/legal/terms-of-service.md")
+  // Summary
+  p.note(formatConfigSummary(config), "安装完成")
+  p.log.success(color.bold("安装完成!"))
+  if (config.hasOpenCode) p.log.message(`运行 ${color.cyan("opencode")} 启动!`)
 
-  p.note(
-    `Include ${color.cyan("ultrawork")} (or ${color.cyan("ulw")}) in your prompt.\n` +
-      `All features work like magic-parallel agents, background tasks,\n` +
-      `deep exploration, and relentless execution until completion.`,
-    "The Magic Word",
-  )
+  p.log.info("遥测默认开启，设置 OMO_DISABLE_POSTHOG=1 关闭。")
+  p.note(`在提示中输入 ${color.cyan("ultrawork")} 即可启动全功能模式`, "使用方法")
 
-  const shouldStar = await p.confirm({
-    message: "Star the repos on GitHub?",
-    initialValue: false,
-  })
+  // GitHub star
+  const shouldStar = await p.confirm({ message: "给仓库点 Star?", initialValue: false })
   if (!p.isCancel(shouldStar) && shouldStar) {
-    spinner.start("Starring GitHub repositories")
-    const results = await starGitHubRepositories(selectedPlatform)
-    const failed = results.filter((result) => !result.ok)
-    if (failed.length === 0) {
-      spinner.stop("GitHub repositories starred")
-    } else {
-      spinner.stop("Could not star every repository")
-      p.log.warn("Make sure GitHub CLI is installed and authenticated.")
-    }
+    spinner.start("Starring...")
+    const results = await starGitHubRepositories("opencode")
+    const failed = results.filter(r => !r.ok)
+    spinner.stop(failed.length === 0 ? "已 Star" : "部分 Star 失败")
   }
 
-  p.outro(color.green("oMoMoMoMo... Enjoy!"))
-
-  if (config.hasOpenCode && (config.hasClaude || config.hasGemini || config.hasCopilot) && !args.skipAuth) {
-    const providers: string[] = []
-    if (config.hasClaude) providers.push(`Anthropic ${color.gray("→ Claude Pro/Max")}`)
-    if (config.hasGemini) providers.push(`Google ${color.gray("→ Gemini")}`)
-    if (config.hasCopilot) providers.push(`GitHub ${color.gray("→ Copilot")}`)
-
-    console.log()
-    console.log(color.bold("Authenticate Your Providers"))
-    console.log()
-    console.log(`   Run ${color.cyan("opencode auth login")} and select:`)
-    for (const provider of providers) {
-      console.log(`   ${SYMBOLS.bullet} ${provider}`)
-    }
-    console.log()
-  }
-
+  p.outro(color.green("oMoMoMoMo... 享受吧!"))
   return 0
 }

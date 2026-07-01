@@ -1,18 +1,17 @@
 import { createInterface } from "node:readline/promises"
 import color from "picocolors"
-import { PLUGIN_NAME, PUBLISHED_PACKAGE_NAME } from "../shared"
+import { PLUGIN_NAME } from "../shared"
 import type { InstallArgs, InstallPlatform } from "./types"
 import {
   addPluginToOpenCodeConfig,
-  detectCurrentConfig,
   getOpenCodeVersion,
   isOpenCodeInstalled,
   writeOmoConfig,
 } from "./config-manager"
+import { generateOmoConfig } from "./config-manager/generate-omo-config"
 import {
   SYMBOLS,
   argsToConfig,
-  detectedToInitialValues,
   formatConfigSummary,
   printBox,
   printError,
@@ -21,56 +20,18 @@ import {
   printStep,
   printSuccess,
   printWarning,
-  validateNonTuiArgs,
 } from "./install-validators"
 import { getUnsupportedOpenCodeVersionMessage } from "./minimum-opencode-version"
 import { runCodexInstaller } from "./install-codex"
 import { starGitHubRepositories } from "./star-request"
-import { getNoModelProvidersWarning, hasAnyConfiguredProvider } from "./provider-availability"
 import { ensureTuiPluginEntry } from "./config-manager/add-tui-plugin-to-tui-config"
 import * as astGrepInstall from "./install-ast-grep-sg"
 
 export async function runCliInstaller(args: InstallArgs, version: string): Promise<number> {
-  const validation = validateNonTuiArgs(args)
-  if (!validation.valid) {
-    printHeader(false)
-    printError("Validation failed:")
-    for (const err of validation.errors) {
-      console.log(`  ${SYMBOLS.bullet} ${err}`)
-    }
-    console.log()
-    printInfo(
-      `Usage: bunx ${PUBLISHED_PACKAGE_NAME} install --no-tui --claude=<no|yes|max20> --gemini=<no|yes> --copilot=<no|yes>`,
-    )
-    console.log()
-    return 1
-  }
-
   const config = argsToConfig(args)
   const hasOpenCode = config.hasOpenCode
-  const detected = hasOpenCode
-    ? detectCurrentConfig()
-    : {
-        isInstalled: false,
-        installedVersion: null,
-        hasClaude: false,
-        isMax20: false,
-        hasOpenAI: false,
-        hasGemini: false,
-        hasCopilot: false,
-        hasCodex: false,
-        hasOpencodeZen: false,
-        hasZaiCodingPlan: false,
-        hasKimiForCoding: false,
-        hasOpencodeGo: false,
-        hasBailianCodingPlan: false,
-        hasMinimaxCnCodingPlan: false,
-        hasMinimaxCodingPlan: false,
-        hasVercelAiGateway: false,
-      }
-  const isUpdate = hasOpenCode && detected.isInstalled
 
-  printHeader(isUpdate)
+  printHeader(false)
 
   const totalSteps = hasOpenCode ? 4 : 2
   let step = 1
@@ -95,11 +56,6 @@ export async function runCliInstaller(args: InstallArgs, version: string): Promi
     }
   }
 
-  if (isUpdate) {
-    const initial = detectedToInitialValues(detected)
-    printInfo(`Current config: Claude=${initial.claude}, Gemini=${initial.gemini}`)
-  }
-
   if (hasOpenCode) {
     printStep(step++, totalSteps, `Adding ${PLUGIN_NAME} plugin...`)
     const pluginResult = await addPluginToOpenCodeConfig(version)
@@ -108,7 +64,7 @@ export async function runCliInstaller(args: InstallArgs, version: string): Promi
       return 1
     }
     printSuccess(
-      `Plugin ${isUpdate ? "verified" : "added"} ${SYMBOLS.arrow} ${color.dim(pluginResult.configPath)}`,
+      `Plugin verified ${SYMBOLS.arrow} ${color.dim(pluginResult.configPath)}`,
     )
     try {
       ensureTuiPluginEntry()
@@ -118,7 +74,8 @@ export async function runCliInstaller(args: InstallArgs, version: string): Promi
     }
 
     printStep(step++, totalSteps, `Writing ${PLUGIN_NAME} configuration...`)
-    const omoResult = writeOmoConfig(config)
+    const omoConfig = generateOmoConfig(config)
+    const omoResult = writeOmoConfig(omoConfig)
     if (!omoResult.success) {
       printError(`Failed: ${omoResult.error}`)
       return 1
@@ -127,20 +84,9 @@ export async function runCliInstaller(args: InstallArgs, version: string): Promi
     await astGrepInstall.installAstGrepForOpenCode({ log: printWarning })
   }
 
-  printBox(formatConfigSummary(config), isUpdate ? "Updated Configuration" : "Installation Complete")
+  printBox(formatConfigSummary(config), "Installation Complete")
 
-  if (config.hasOpenCode && !config.hasClaude) {
-    printInfo(
-      "Note: Sisyphus agent performs best with Claude Opus 4.5+. " +
-        "Other models work but may have reduced orchestration quality.",
-    )
-  }
-
-  if (config.hasOpenCode && !hasAnyConfiguredProvider(config)) {
-    printWarning(getNoModelProvidersWarning())
-  }
-
-  console.log(`${SYMBOLS.star} ${color.bold(color.green(isUpdate ? "Configuration updated!" : "Installation complete!"))}`)
+  console.log(`${SYMBOLS.star} ${color.bold(color.green("Installation complete!"))}`)
   if (hasOpenCode) {
     console.log(`  Run ${color.cyan("opencode")} to start!`)
   }
@@ -180,16 +126,6 @@ export async function runCliInstaller(args: InstallArgs, version: string): Promi
   }
   console.log(color.dim("oMoMoMoMo... Enjoy!"))
   console.log()
-
-  if (hasOpenCode && (config.hasClaude || config.hasGemini || config.hasCopilot) && !args.skipAuth) {
-    printBox(
-      `Run ${color.cyan("opencode auth login")} and select your provider:\n` +
-        (config.hasClaude ? `  ${SYMBOLS.bullet} Anthropic ${color.gray("→ Claude Pro/Max")}\n` : "") +
-        (config.hasGemini ? `  ${SYMBOLS.bullet} Google ${color.gray("→ Gemini")}\n` : "") +
-        (config.hasCopilot ? `  ${SYMBOLS.bullet} GitHub ${color.gray("→ Copilot")}` : ""),
-      "Authenticate Your Providers",
-    )
-  }
 
   return 0
 }
