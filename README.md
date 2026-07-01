@@ -48,6 +48,21 @@ EOF
 opencode
 ```
 
+## 配置 AI 模型
+
+启动后运行交互式安装器，选择 Provider 并分配 Agent 模型：
+
+```bash
+bun run omo install
+```
+
+安装器会引导你完成三个阶段：
+1. 选择拥有的 AI 服务商（多选）
+2. 选择每个服务商的可用模型（多选）
+3. 为每个 Agent 分配主模型和 fallback
+
+配置写入 `~/.config/opencode/oh-my-openagent.jsonc`。
+
 ## 使用
 
 在 OpenCode 中输入 `ultrawork` 即可启动全功能模式。
