@@ -17,13 +17,14 @@ function getModelChoices(
 ): Array<{ value: string; label: string; hint: string }> {
   const choices: Array<{ value: string; label: string; hint: string }> = []
   for (const [pKey, models] of Object.entries(providerModels)) {
-    const entry = PROVIDER_MODEL_CATALOG[pKey]
-    if (!entry) continue
+    const catalogEntry = PROVIDER_MODEL_CATALOG[pKey]
+    const label = catalogEntry?.label ?? pKey
+    const hint = catalogEntry?.description ?? ""
     for (const modelId of models) {
       choices.push({
         value: `${pKey}/${modelId}`,
-        label: `${entry.label} / ${modelId}`,
-        hint: entry.description,
+        label: `${label} / ${modelId}`,
+        hint,
       })
     }
   }
@@ -226,19 +227,61 @@ export async function promptInstallConfig(): Promise<InstallConfig | null> {
   // ── Round loop: add providers one by one ──
   while (true) {
     // Step 1: Select provider
-    const pKey = await promptSelectProvider(remaining)
-    if (!pKey) return null
+    const originalPKey = await promptSelectProvider(remaining)
+    if (!originalPKey) return null
 
-    const entry = PROVIDER_MODEL_CATALOG[pKey]
-    if (!entry) {
-      p.log.warn(`未知的 Provider: ${pKey}`)
-      remaining.splice(remaining.indexOf(pKey), 1)
-      continue
+    let pKey: string
+    let entry: ProviderEntry
+
+    if (originalPKey === "custom") {
+      const vendorName = await p.text({
+        message: "厂商名称 (用作 Provider 标识, 不含空格):",
+        placeholder: "my-deepseek",
+        validate: (v: string) =>
+          v.length === 0 ? "名称不能为空" : (v.includes(" ") ? "不能包含空格" : undefined),
+      })
+      if (p.isCancel(vendorName)) {
+        p.cancel("取消安装")
+        return null
+      }
+
+      pKey = vendorName
+
+      entry = {
+        label: vendorName,
+        description: "自定义 Provider",
+        baseURL: "",
+        protocol: "openai" as const,
+        models: [],
+        allowCustomModel: true,
+      }
+    } else {
+      pKey = originalPKey
+      const catalogEntry = PROVIDER_MODEL_CATALOG[originalPKey]
+      if (!catalogEntry) {
+        p.log.warn(`未知的 Provider: ${originalPKey}`)
+        remaining.splice(remaining.indexOf(originalPKey), 1)
+        continue
+      }
+      entry = { ...catalogEntry }
     }
 
     // Step 2: API Key
     const apiKey = await promptApiKey(entry.label)
     if (apiKey === null) return null
+
+    if (originalPKey === "custom") {
+      const baseURL = await p.text({
+        message: "API 端点 URL:",
+        placeholder: "https://api.example.com/v1",
+      })
+      if (p.isCancel(baseURL)) {
+        p.cancel("取消安装")
+        return null
+      }
+      entry.baseURL = baseURL
+      entry.description = `自定义: ${baseURL}`
+    }
 
     if (apiKey) {
       p.log.info(`API Key 已记录: ${entry.label}`)
@@ -257,7 +300,7 @@ export async function promptInstallConfig(): Promise<InstallConfig | null> {
     }
 
     // Remove selected provider from remaining
-    remaining.splice(remaining.indexOf(pKey), 1)
+    remaining.splice(remaining.indexOf(originalPKey), 1)
 
     if (remaining.length === 0) {
       p.log.info("所有 Provider 已选择完毕")
