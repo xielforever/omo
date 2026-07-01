@@ -11,17 +11,6 @@ git clone https://github.com/xielforever/omo.git
 cd omo
 bun install --ignore-scripts
 ```
-
-```bash
-# 配置 API Key（二选一）
-# 方式1: 使用 .env 文件
-cp .env.example .env
-# 编辑 .env，填入 ANTHROPIC_API_KEY / OPENAI_API_KEY 等
-
-# 方式2: 使用 OpenCode auth login
-opencode auth login
-```
-
 然后配置 OpenCode 加载本地插件：
 
 ```bash
@@ -50,16 +39,27 @@ opencode
 
 ## 配置 AI 模型
 
-启动后运行交互式安装器，选择 Provider 并分配 Agent 模型：
+首先配置 API Key：
+
+```bash
+# 方式1: 使用 .env 文件
+cp .env.example .env
+# 编辑 .env，填入 ANTHROPIC_API_KEY / OPENAI_API_KEY 等
+
+# 方式2: 使用 OpenCode auth
+opencode auth login
+```
+
+然后运行交互式安装器，选择 Provider 并分配 Agent 模型：
 
 ```bash
 bun run omo install
 ```
 
 安装器会引导你完成三个阶段：
-1. 选择拥有的 AI 服务商（多选）
+1. 选择拥有的 AI 服务商（16 个可选，多选）
 2. 选择每个服务商的可用模型（多选）
-3. 为每个 Agent 分配主模型和 fallback
+3. 为 11 个 Agent 分配主模型和 fallback
 
 配置写入 `~/.config/opencode/oh-my-openagent.jsonc`。
 
