@@ -46,7 +46,7 @@ bun run omo install
 ```
 
 安装器会引导你完成：
-1. 选择 AI 服务商（16 个可选，多选）
+1. 选择 AI 服务商（8 个可选，多选）
 2. 配置 API Key（通过 .env 或 opencode auth）
 3. 选择每个服务商的可用模型（多选）
 4. 为 11 个 Agent 分配主模型和 fallback
