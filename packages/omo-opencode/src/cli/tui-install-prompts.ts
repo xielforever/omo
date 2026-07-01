@@ -11,25 +11,6 @@ function parseModelChoice(choice: string): [string, string] {
   return [choice.slice(0, idx), choice.slice(idx + 1)]
 }
 
-/** 根据用户选择的 provider→models 构建 "provider/model" 下拉列表 */
-function getModelChoices(
-  providerModels: Record<string, string[]>,
-): Array<{ value: string; label: string; hint: string }> {
-  const choices: Array<{ value: string; label: string; hint: string }> = []
-  for (const [pKey, models] of Object.entries(providerModels)) {
-    const catalogEntry = PROVIDER_MODEL_CATALOG[pKey]
-    const label = catalogEntry?.label ?? pKey
-    const hint = catalogEntry?.description ?? ""
-    for (const modelId of models) {
-      choices.push({
-        value: `${pKey}/${modelId}`,
-        label: `${label} / ${modelId}`,
-        hint,
-      })
-    }
-  }
-  return choices
-}
 
 // ── agent definitions ───────────────────────────────────────────────
 
@@ -175,36 +156,6 @@ export async function promptNextAction(
 
 let fallbackHintShown = false
 
-/** 单个 agent 的主模型选择（fallback 通过编辑 config 手动添加） */
-export async function promptAgentAssignment(
-  agentName: string,
-  displayName: string,
-  modelChoices: Array<{ value: string; label: string; hint: string }>,
-  recommended?: string,
-): Promise<{ primary: string; fallbacks: string[] } | null> {
-  const primary = await p.select<string>({
-    message: `🧠 ${displayName} (${agentName}) — 选择主模型:`,
-    options: [
-      ...modelChoices.map((c) => ({ ...c })),
-      { value: "__skip__", label: "跳过此 Agent", hint: "不在配置中启用" },
-    ],
-    ...(recommended ? { initialValue: recommended } : {}),
-  })
-
-  if (p.isCancel(primary)) {
-    p.cancel("取消安装")
-    return null
-  }
-  if (primary === "__skip__") return { primary: "", fallbacks: [] }
-
-  if (!fallbackHintShown) {
-    fallbackHintShown = true
-    p.log.info("需要 Fallback 模型？稍后编辑 ~/.config/opencode/oh-my-openagent.jsonc")
-  }
-
-  return { primary, fallbacks: [] }
-}
-
 // ── main orchestrator ───────────────────────────────────────────────
 
 export async function promptInstallConfig(): Promise<InstallConfig | null> {
@@ -310,31 +261,82 @@ export async function promptInstallConfig(): Promise<InstallConfig | null> {
   }
 
   // ── Agent assignment ──
-  p.log.step("Agent 模型分配 — 为每个 Agent 选择主模型和可选的 fallback")
+  p.log.step("Agent 模型分配 — 为每个 Agent 选择 Provider 和模型")
 
-  const modelChoices = getModelChoices(providerModels)
+  const providerChoices = Object.entries(providerModels).map(([key, models]) => {
+    const catEntry = PROVIDER_MODEL_CATALOG[key]
+    return {
+      value: key,
+      label: catEntry?.label ?? key,
+      hint: `模型: ${models.join(", ")}`,
+    }
+  })
+
   const agentAssignments: InstallConfig["agentAssignments"] = []
+  let agentIndex = 0
 
-  for (const agent of AGENT_DEFS) {
-    const recommended = modelChoices[0]?.value
-    const result = await promptAgentAssignment(
-      agent.key,
-      `${agent.zh} — ${agent.desc}`,
-      modelChoices,
-      recommended,
-    )
-    if (result === null) return null
-    if (result.primary) {
-      const [pProvider, pModel] = parseModelChoice(result.primary)
+  while (agentIndex < AGENT_DEFS.length) {
+    const agent = AGENT_DEFS[agentIndex]
+
+    const chosenProvider = await p.select<string>({
+      message: `🧠 ${agent.zh} (${agent.key}) ${agent.desc} — 选择 Provider:`,
+      options: [
+        ...providerChoices.map((c) => ({ ...c })),
+        { value: "__skip__", label: "跳过此 Agent", hint: "不在配置中启用" },
+        ...(agentIndex > 0 ? [{ value: "__done__", label: "完成配置", hint: "跳过剩余 Agent" }] : []),
+      ],
+    })
+    if (p.isCancel(chosenProvider)) {
+      p.cancel("取消安装")
+      return null
+    }
+
+    if (chosenProvider === "__skip__") {
+      agentIndex++
+      continue
+    }
+    if (chosenProvider === "__done__") break
+
+    const models = providerModels[chosenProvider] ?? []
+    const modelOptions = models.map((m) => {
+      const catEntry = PROVIDER_MODEL_CATALOG[chosenProvider]
+      const catalogModel = catEntry?.models?.find((cm) => cm.id === m)
+      return {
+        value: m,
+        label: catalogModel?.label ?? m,
+        hint: catalogModel?.description,
+      }
+    })
+
+    if (modelOptions.length === 1) {
       agentAssignments.push({
         agentName: agent.key,
-        primary: { provider: pProvider, model: pModel },
-        fallbacks: result.fallbacks.map((f) => {
-          const [fbProvider, fbModel] = parseModelChoice(f)
-          return { provider: fbProvider, model: fbModel }
-        }),
+        primary: { provider: chosenProvider, model: modelOptions[0].value },
+        fallbacks: [],
+      })
+    } else {
+      const chosenModel = await p.select<string>({
+        message: `  选择 ${PROVIDER_MODEL_CATALOG[chosenProvider]?.label ?? chosenProvider} 的模型:`,
+        options: modelOptions.map((c) => ({ ...c })),
+      })
+      if (p.isCancel(chosenModel)) {
+        p.cancel("取消安装")
+        return null
+      }
+
+      agentAssignments.push({
+        agentName: agent.key,
+        primary: { provider: chosenProvider, model: chosenModel },
+        fallbacks: [],
       })
     }
+
+    if (!fallbackHintShown && agentAssignments.length > 0) {
+      fallbackHintShown = true
+      p.log.info("需要 Fallback？编辑 ~/.config/opencode/oh-my-openagent.jsonc")
+    }
+
+    agentIndex++
   }
 
   p.log.success("配置完成！")
