@@ -69,9 +69,11 @@ bun packages/omo-opencode/src/cli/index.ts install
 
 ## 给 LLM 使用
 
-在任意 LLM 工具中粘贴以下指令：
+完整安装指令（包含 8 个 Provider、11 个 Agent 的非交互配置）见：
 
-> 按照 https://raw.githubusercontent.com/xielforever/omo/refs/heads/main/README.md 的源码安装指引，克隆、安装依赖、配置 OpenCode 插件并启动。
+> https://raw.githubusercontent.com/xielforever/omo/refs/heads/main/docs/guide/installation.md
+
+把上面的链接喂给任意 LLM 工具，让它按 Step 0 到 Step 5 执行即可。
 
 ## 上游
 
