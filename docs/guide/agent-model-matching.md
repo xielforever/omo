@@ -384,7 +384,7 @@ See the [Orchestration System Guide](./orchestration.md) for how agents dispatch
 
 ```jsonc
 {
-  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-opencode.schema.json",
+  "$schema": "https://raw.githubusercontent.com/xielforever/omo/dev/assets/oh-my-opencode.schema.json",
 
   "agents": {
     // Sisyphus: Kimi K2.7 is the top alternative to Claude for orchestration

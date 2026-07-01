@@ -2,7 +2,7 @@
 
 > **HOLD THE FUCK UP. THIS ENTIRE GODDAMN CODEBASE IS BEING RIPPED APART AND REBUILT RIGHT NOW. A MASSIVE MULTI-HARNESS AGENT OS REFACTOR IS IN PROGRESS — WE ARE RESTRUCTURING EVERYTHING TO SUPPORT MULTIPLE AGENT HARNESSES (OPENCODE, CODEX, PI, AND OTHERS). DO NOT TRUST THE STRUCTURE BELOW AS STABLE. READ THE [ROADMAP](./ROADMAP.md) BEFORE YOU TOUCH ANYTHING OR SO HELP ME GOD.**
 
-**Generated:** 2026-06-29 | **Commit:** c4336cceb | **Branch:** dev | **Release:** v4.14.0
+**Generated:** 2026-07-01 | **Commit:** (fork) | **Branch:** custom | **Fork:** xielforever/omo
 
 ## STOP. QA IS MANDATORY. NON-NEGOTIABLE. EVERY SINGLE TIME YOU TOUCH AN OPENCODE- OR CODEX-CONNECTED COMPONENT.
 
@@ -211,7 +211,7 @@ Defaults                   (Zod safeParse fills omitted fields)
 - `mcp_env_allowlist`: **user-only** for security; walked configs cannot extend it
 - `migrateConfigFile()` rewrites legacy keys (idempotent via `_migrations` tracking + timestamped backups)
 
-Schema autocomplete: `"$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-opencode.schema.json"`
+Schema autocomplete: `"$schema": "https://raw.githubusercontent.com/xielforever/omo/dev/assets/oh-my-opencode.schema.json"`
 
 ## THREE-TIER MCP SYSTEM
 

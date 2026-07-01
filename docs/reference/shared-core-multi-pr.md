@@ -10,7 +10,7 @@ The current extraction surface includes `utils`, `rules-engine`,
 `lsp-core`, `mcp-stdio-core`, `mcp-client-core`, `tmux-core`, `team-core`,
 `openclaw-core`, `claude-code-compat-core`, `skills-loader-core`, and
 `delegate-core`. Release and packaging PRs must keep the root npm tarball,
-`lazycodex-ai` tarball, and `code-yeongyu/lazycodex` marketplace payload in
+`lazycodex-ai` tarball, and `xielforever/omo` marketplace payload in
 sync with those package boundaries.
 
 ## PR Matrix

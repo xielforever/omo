@@ -69,7 +69,7 @@ If English isn't your first language, don't worry! We value your contributions r
 
 ```bash
 # Clone the repository (with the frontend provenance submodules)
-git clone --recurse-submodules https://github.com/code-yeongyu/oh-my-openagent.git
+git clone --recurse-submodules https://github.com/xielforever/omo.git
 cd oh-my-openagent
 
 # If you cloned without --recurse-submodules, initialize them now (non-fatal offline):

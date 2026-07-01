@@ -25,7 +25,7 @@ Paste this prompt into Claude Code, AmpCode, Cursor, or any LLM agent session:
 
 ```
 Install and configure oh-my-openagent by following the instructions here:
-https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/refs/heads/dev/docs/guide/installation.md
+https://raw.githubusercontent.com/xielforever/omo/refs/heads/dev/docs/guide/installation.md
 ```
 
 ### Light (Codex CLI) — one line, no agent needed
@@ -68,14 +68,14 @@ Codex may still start Windows shell calls through its own defaults. The Light ed
 
 ### Install from the Codex marketplace (in-app)
 
-> **Experimental, additive path.** `npx lazycodex-ai install` above remains the primary, fully supported route. The marketplace bundle is hosted in this project's own [lazycodex](https://github.com/code-yeongyu/lazycodex) repository — it is not an OpenAI curated listing.
+> **Experimental, additive path.** `npx lazycodex-ai install` above remains the primary, fully supported route. The marketplace bundle is hosted in this project's own [lazycodex](https://github.com/xielforever/omo) repository — it is not an OpenAI curated listing.
 
 The same Light edition can be installed entirely from inside Codex through its plugin marketplace, with no npx step.
 
 **TUI route.** In a Codex session, type `/plugins`, open the **Add Marketplace** tab ("Add a marketplace from a Git repo or local root."), and enter the marketplace source:
 
 ```
-https://github.com/code-yeongyu/lazycodex
+https://github.com/xielforever/omo
 ```
 
 Then pick `omo` from the `sisyphuslabs` marketplace in the same `/plugins` menu and install it.
@@ -83,7 +83,7 @@ Then pick `omo` from the `sisyphuslabs` marketplace in the same `/plugins` menu 
 **CLI route** — the equivalent two-liner:
 
 ```bash
-codex plugin marketplace add https://github.com/code-yeongyu/lazycodex
+codex plugin marketplace add https://github.com/xielforever/omo
 codex plugin add omo@sisyphuslabs
 ```
 
@@ -128,7 +128,7 @@ A detached worker finishes the install in the background (the `sg` download is t
 | Proxy limitation | Binary downloads fail behind an HTTP(S) proxy. The logged error says it plainly: the bootstrap downloader "does not tunnel through HTTP(S) proxies in v1; the download was attempted directly." | Run one session on a direct connection, or provide `sg` via `OMO_AST_GREP_SG_PATH`/`PATH`. Verify with `npx lazycodex-ai doctor`. |
 | OpenCode Windows proxy preinstall | OpenCode starts before OMO loads, shows only default agents, or logs `fetch() proxy.url must be a non-empty string` while trying to install `oh-my-openagent@latest`. | Set `HTTP_PROXY`/`HTTPS_PROXY` for the shell that launches OpenCode, then preinstall into OpenCode's Windows config prefix: `npm install oh-my-openagent@latest --prefix "%APPDATA%\\opencode"`. Restart OpenCode and run `bunx oh-my-openagent doctor --json`. |
 
-**Windows status.** On native Windows the marketplace bootstrap runs through a PowerShell 5.1-compatible `bootstrap.ps1`: it provisions the pinned Node LTS zip when `node` is absent, prepares Git Bash the same way the npx installer does, and writes its transcript to `ps-bootstrap.log` in the plugin data dir (degraded lines look like `degraded component=node reason=... hint=npx lazycodex-ai doctor`). Windows provisioning is shipped with static test coverage; real-device validation is still tracked separately in [code-yeongyu/lazycodex#52](https://github.com/code-yeongyu/lazycodex/issues/52). Do not treat static coverage as proof that a physical Windows install was exercised.
+**Windows status.** On native Windows the marketplace bootstrap runs through a PowerShell 5.1-compatible `bootstrap.ps1`: it provisions the pinned Node LTS zip when `node` is absent, prepares Git Bash the same way the npx installer does, and writes its transcript to `ps-bootstrap.log` in the plugin data dir (degraded lines look like `degraded component=node reason=... hint=npx lazycodex-ai doctor`). Windows provisioning is shipped with static test coverage; real-device validation is still tracked separately in [xielforever/omo#52](https://github.com/xielforever/omo/issues/52). Do not treat static coverage as proof that a physical Windows install was exercised.
 
 ### A note on direct install
 
@@ -153,7 +153,7 @@ Do not run a blanket trust command. Trust only packages you recognize from this 
 > **IMPORTANT: Use `curl` to fetch this file, NOT WebFetch.** WebFetch summarizes content and loses critical flags like `--platform`, subscription questions, and Codex verification details. Always use:
 >
 > ```bash
-> curl -fsSL https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/refs/heads/dev/docs/guide/installation.md
+> curl -fsSL https://raw.githubusercontent.com/xielforever/omo/refs/heads/dev/docs/guide/installation.md
 > ```
 
 If you are an LLM agent helping a user install oh-my-openagent, help them install the requested edition, verify the setup, and configure model providers.
@@ -819,7 +819,7 @@ Merge rules:
 Schema autocomplete in your editor:
 
 ```json
-"$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-opencode.schema.json"
+"$schema": "https://raw.githubusercontent.com/xielforever/omo/dev/assets/oh-my-opencode.schema.json"
 ```
 
 #### Turning features off

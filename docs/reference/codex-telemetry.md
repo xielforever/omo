@@ -25,7 +25,7 @@ Two paths can attempt to send the same daily event. They share the same daily de
 | `install` | `install_completed` | `npx lazycodex-ai install`, `omo install --platform=codex`, or `omo install --platform=both` finishes |
 | `plugin` | `session_start` | The Codex plugin `SessionStart` hook runs at the start of a Codex session |
 
-The installer path is implemented in `packages/omo-codex/src/telemetry/`. The runtime plugin path is implemented in `packages/omo-codex/plugin/components/telemetry/`, which is copied into the `code-yeongyu/lazycodex` marketplace repository under `plugins/omo/components/telemetry/`.
+The installer path is implemented in `packages/omo-codex/src/telemetry/`. The runtime plugin path is implemented in `packages/omo-codex/plugin/components/telemetry/`, which is copied into the `xielforever/omo` marketplace repository under `plugins/omo/components/telemetry/`.
 
 ## Properties
 
